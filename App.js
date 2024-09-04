@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { View, TextInput, Text, Button, FlatList, StyleSheet, Pressable } from "react-native";
+// import til at kunne gemme data i appen
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function App() {
+  // State til at holde teksten i inputfeltet og noterne
     const [text, setText] = useState("");
     const [notes, setNotes] = useState([]);
 
-    // Load notes from AsyncStorage on mount
+    // hent noterne fra AsyncStorage når appen starter
     useEffect(() => {
         loadNotes();
     }, []);
@@ -45,6 +47,8 @@ export default function App() {
         saveNotes(newNotes);
     };
 
+    // Funktion til at rendere en note
+    // FlatList komponenten bruger denne funktion til at vise hver note
     const renderNote = ({ item }) => (
         <View style={styles.noteContainer}>
             <Text style={styles.note}>{item.text}</Text>
@@ -59,6 +63,7 @@ export default function App() {
             <Text style={styles.header}>Notes</Text>
             <TextInput style={styles.input} placeholder="Enter a note..." value={text} onChangeText={setText} />
             <Button title="Add Note" onPress={addNote} />
+            {/* Område til at holde notes liste */}
             <FlatList
                 data={notes}
                 renderItem={renderNote}
