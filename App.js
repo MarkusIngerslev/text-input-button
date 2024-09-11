@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { View, TextInput, Text, Button, FlatList, StyleSheet, Pressable } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import NoteDetail from "./NoteDetail"; // Importér NoteDetail
