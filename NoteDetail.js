@@ -1,15 +1,26 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, StyleSheet } from "react-native";
+import { doc, updateDoc } from "firebase/firestore";
+import { database } from "./firebase";
 
 export default function NoteDetail({ route, navigation }) {
-    const { note, notes, setNotes, saveNotes } = route.params;
+    const { note, notes, setNotes } = route.params;
     const [text, setText] = useState(note.text);
 
-    const saveNote = () => {
-        const updatedNotes = notes.map((n) => (n.id === note.id ? { ...n, text } : n));
-        setNotes(updatedNotes);
-        saveNotes(updatedNotes); // Save updated notes to AsyncStorage
-        navigation.goBack();
+    const saveNote = async () => {
+        try {
+            const noteRef = doc(database, "notes", note.id);
+            await updateDoc(noteRef, {
+                text: text,
+            });
+
+            // Opdater lokalt
+            const updatedNotes = notes.map((n) => (n.id === note.id ? { ...n, text } : n));
+            setNotes(updatedNotes);
+            navigation.goBack();
+        } catch (error) {
+            console.error("Failed to update note in Firestore.", error);
+        }
     };
 
     return (
@@ -26,9 +37,10 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     input: {
-        height: 150,
+        height: 40,
         borderColor: "gray",
         borderWidth: 1,
-        padding: 10,
+        marginBottom: 10,
+        paddingLeft: 8,
     },
 });

@@ -1,53 +1,60 @@
 import React, { useState, useEffect } from "react";
+import { database } from "./firebase";
+import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { View, TextInput, Text, Button, FlatList, Pressable, StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function HomeScreen({ navigation }) {
     const [text, setText] = useState("");
     const [notes, setNotes] = useState([]);
 
-    // hent noterne fra AsyncStorage når appen starter
+    // Hent noterne fra Firestore når appen starter
     useEffect(() => {
         loadNotes();
     }, []);
 
+    // Hent alle noter fra Firestore
     const loadNotes = async () => {
         try {
-            const savedNotes = await AsyncStorage.getItem("notes");
-            if (savedNotes !== null) {
-                setNotes(JSON.parse(savedNotes));
-            }
+            const querySnapshot = await getDocs(collection(database, "notes"));
+            const fetchedNotes = [];
+            querySnapshot.forEach((doc) => {
+                fetchedNotes.push({ ...doc.data(), id: doc.id });
+            });
+            setNotes(fetchedNotes);
         } catch (error) {
-            console.error("Failed to load notes.", error);
+            console.error("Failed to load notes from Firestore.", error);
         }
     };
 
-    const saveNotes = async (newNotes) => {
-        try {
-            await AsyncStorage.setItem("notes", JSON.stringify(newNotes));
-        } catch (error) {
-            console.error("Failed to save notes.", error);
-        }
-    };
-
-    const addNote = () => {
+    // Tilføj en ny note til Firestore
+    const addNote = async () => {
         if (text.length > 0) {
-            const newNotes = [...notes, { id: Date.now().toString(), text }];
-            setNotes(newNotes);
-            setText("");
-            saveNotes(newNotes); // Save notes to AsyncStorage
+            try {
+                const docRef = await addDoc(collection(database, "notes"), {
+                    text: text,
+                });
+                setNotes([...notes, { id: docRef.id, text }]);
+                setText(""); // Nulstil tekstinput
+            } catch (err) {
+                console.log("Fejl i DB: " + err);
+            }
         }
     };
 
-    const removeNote = (id) => {
-        const newNotes = notes.filter((note) => note.id !== id);
-        setNotes(newNotes);
-        saveNotes(newNotes);
+    // Fjern en note fra Firestore
+    const removeNote = async (id) => {
+        try {
+            await deleteDoc(doc(database, "notes", id));
+            const newNotes = notes.filter((note) => note.id !== id);
+            setNotes(newNotes);
+        } catch (error) {
+            console.error("Failed to delete note from Firestore.", error);
+        }
     };
 
     const handleNotePress = (id) => {
         const selectedNote = notes.find((note) => note.id === id);
-        navigation.navigate("NoteDetail", { note: selectedNote, notes, setNotes, saveNotes });
+        navigation.navigate("NoteDetail", { note: selectedNote, notes, setNotes });
     };
 
     const renderNote = ({ item }) => {
