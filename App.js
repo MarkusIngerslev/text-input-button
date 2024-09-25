@@ -1,13 +1,12 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import NoteDetail from "./NoteDetail"; // Importér NoteDetail
-import HomeScreen from "./HomeScreen"; // Importér HomeScreen
+import NoteDetail from "./components/NoteDetail"; // Importér NoteDetail
+import HomeScreen from "./components/HomeScreen"; // Importér HomeScreen
 
 const Stack = createStackNavigator();
 
 export default function App() {
-
     return (
         <NavigationContainer>
             <Stack.Navigator>
