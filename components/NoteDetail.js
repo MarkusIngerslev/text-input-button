@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, StyleSheet, Image } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
-import { database } from "./firebase";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { database, storage } from "./firebase";
 import * as ImagePicker from "expo-image-picker";
+import { Platform } from "react-native";
 
 export default function NoteDetail({ route, navigation }) {
     const { note, notes, setNotes } = route.params;
     const [text, setText] = useState(note.text);
     const [imageUri, setImageUri] = useState(null); // State for the image
+    const [uploading, setUploading] = useState(false);
 
     const saveNote = async () => {
         try {
@@ -46,13 +49,51 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
+    // Function to upload the image to Firebase Storage
+    const uploadImageToFirebase = async () => {
+        if (!imageUri) {
+            alert("Please select an image first");
+            return;
+        }
+
+        try {
+            setUploading(true);
+            const response = await fetch(imageUri);
+            const blob = await response.blob();
+
+            // Create a reference to the Firebase Storage location
+            const filename = imageUri.substring(imageUri.lastIndexOf("/") + 1);
+            const storageRef = ref(storage, `images/${filename}`);
+
+            // Upload the image to Firebase Storage
+            await uploadBytes(storageRef, blob);
+            alert("Image uploaded successfully!");
+
+            // Optional: You can also get the download URL if needed
+            const downloadUrl = await getDownloadURL(storageRef);
+            console.log("Download URL: ", downloadUrl);
+
+            setUploading(false);
+        } catch (error) {
+            console.error("Error uploading image: ", error);
+            setUploading(false);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <TextInput style={styles.input} value={text} onChangeText={setText} multiline />
             <Button title="Save" onPress={saveNote} />
 
-            {/* Button to upload an image */}
-            <Button title="Upload Image" onPress={handleImageUpload} />
+            {/* Button to upload an image locally */}
+            <Button title="Select Image" onPress={handleImageUpload} />
+
+            {/* Button to upload image to Firebase Storage */}
+            <Button
+                title={uploading ? "Uploading..." : "Upload to Firebase"}
+                onPress={uploadImageToFirebase}
+                disabled={uploading}
+            />
 
             {/* Display the selected image */}
             {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
