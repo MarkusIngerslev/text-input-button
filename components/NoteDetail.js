@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, StyleSheet, Image } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
-import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { database, storage } from "./firebase";
 import * as ImagePicker from "expo-image-picker";
 
 export default function NoteDetail({ route, navigation }) {
     const { note, notes, setNotes } = route.params;
     const [text, setText] = useState(note.text);
-    const [imageUri, setImageUri] = useState(null); // State for the selected image
-    const [downloadedImageUri, setDownloadedImageUri] = useState(null); // State for the downloaded image
+    const [imageUri, setImageUri] = useState(note.imageUri || null); // Load image URI if it exists
     const [uploading, setUploading] = useState(false);
 
     const saveNote = async () => {
@@ -17,10 +16,11 @@ export default function NoteDetail({ route, navigation }) {
             const noteRef = doc(database, "notes", note.id);
             await updateDoc(noteRef, {
                 text: text,
+                imageUri: imageUri, // Save the image URI with the note
             });
 
-            // Update locally
-            const updatedNotes = notes.map((n) => (n.id === note.id ? { ...n, text } : n));
+            // Opdater lokalt
+            const updatedNotes = notes.map((n) => (n.id === note.id ? { ...n, text, imageUri } : n));
             setNotes(updatedNotes);
             navigation.goBack();
         } catch (error) {
@@ -43,11 +43,11 @@ export default function NoteDetail({ route, navigation }) {
         });
 
         if (!pickerResult.canceled) {
-            setImageUri(pickerResult.assets[0].uri); // Set the selected image URI
+            setImageUri(pickerResult.assets[0].uri); // Set the selected image URI locally
         }
     };
 
-    // Function to upload the image to Firebase Storage
+    // Function to upload the image to Firebase Storage and get the URL
     const uploadImageToFirebase = async () => {
         if (!imageUri) {
             alert("Please select an image first");
@@ -65,39 +65,23 @@ export default function NoteDetail({ route, navigation }) {
 
             // Upload the image to Firebase Storage
             await uploadBytes(storageRef, blob);
-            alert("Image uploaded successfully!");
 
-            // Optional: You can also get the download URL if needed
+            // Get the download URL for the image
             const downloadUrl = await getDownloadURL(storageRef);
-            console.log("Download URL: ", downloadUrl);
+            setImageUri(downloadUrl); // Set the image URL from Firebase
 
             setUploading(false);
+            alert("Image uploaded successfully and connected to the note!");
         } catch (error) {
             console.error("Error uploading image: ", error);
             setUploading(false);
         }
     };
 
-    // Function to fetch the image from Firebase Storage
-    const fetchImageFromFirebase = async () => {
-        try {
-            // Reference to the location in Firebase Storage where the image is stored
-            const storageRef = ref(storage, `images/Ks1YUCcXtAAAAAElFTkSuQmCC`); // Update this to match the filename or path of the image you want to fetch
-
-            // Get the download URL for the image
-            const url = await getDownloadURL(storageRef);
-            setDownloadedImageUri(url); // Set the downloaded image URI
-
-            alert("Image fetched successfully!");
-        } catch (error) {
-            console.error("Error fetching image: ", error);
-        }
-    };
-
     return (
         <View style={styles.container}>
             <TextInput style={styles.input} value={text} onChangeText={setText} multiline />
-            <Button title="Save" onPress={saveNote} />
+            <Button title="Save Note" onPress={saveNote} />
 
             {/* Button to upload an image locally */}
             <Button title="Select Image" onPress={handleImageUpload} />
@@ -109,14 +93,8 @@ export default function NoteDetail({ route, navigation }) {
                 disabled={uploading}
             />
 
-            {/* Button to fetch image from Firebase Storage */}
-            <Button title="Fetch Image from Firebase" onPress={fetchImageFromFirebase} />
-
-            {/* Display the selected image */}
+            {/* Display the selected or uploaded image */}
             {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
-
-            {/* Display the downloaded image */}
-            {downloadedImageUri && <Image source={{ uri: downloadedImageUri }} style={styles.image} />}
         </View>
     );
 }

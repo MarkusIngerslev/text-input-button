@@ -18,7 +18,7 @@ export default function HomeScreen({ navigation }) {
             const querySnapshot = await getDocs(collection(database, "notes"));
             const fetchedNotes = [];
             querySnapshot.forEach((doc) => {
-                fetchedNotes.push({ ...doc.data(), id: doc.id });
+                fetchedNotes.push({ ...doc.data(), id: doc.id, imageUri: doc.data().imageUri || null });
             });
             setNotes(fetchedNotes);
         } catch (error) {
