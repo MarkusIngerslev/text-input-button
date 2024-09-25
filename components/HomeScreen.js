@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { database } from "./firebasefirebase";
+import { database } from "./firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { View, TextInput, Text, Button, FlatList, Pressable, StyleSheet } from "react-native";
 

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, TextInput, Button, StyleSheet, Image } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
 import { database } from "./firebase";
-import { launchImageLibrary } from "react-native-image-picker";
+import * as ImagePicker from "expo-image-picker";
 
 export default function NoteDetail({ route, navigation }) {
     const { note, notes, setNotes } = route.params;
@@ -26,17 +26,24 @@ export default function NoteDetail({ route, navigation }) {
     };
 
     // Function to handle image upload
-    const handleImageUpload = () => {
-        launchImageLibrary({}, (response) => {
-            if (response.didCancel) {
-                console.log("User cancelled image picker");
-            } else if (response.errorMessage) {
-                console.log("Image Picker Error: ", response.errorMessage);
-            } else {
-                const uri = response.assets[0].uri;
-                setImageUri(uri); // Set the image URI to state
-            }
+    const handleImageUpload = async () => {
+        // Request permission to access media library
+        let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (permissionResult.granted === false) {
+            alert("Permission to access camera roll is required!");
+            return;
+        }
+
+        let pickerResult = await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
         });
+
+        if (!pickerResult.canceled) {
+            setImageUri(pickerResult.assets[0].uri); // Set the selected image URI
+        }
     };
 
     return (
