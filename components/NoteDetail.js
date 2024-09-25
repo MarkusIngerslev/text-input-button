@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, StyleSheet, Image } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import { database, storage } from "./firebase";
 import * as ImagePicker from "expo-image-picker";
-import { Platform } from "react-native";
 
 export default function NoteDetail({ route, navigation }) {
     const { note, notes, setNotes } = route.params;
     const [text, setText] = useState(note.text);
-    const [imageUri, setImageUri] = useState(null); // State for the image
+    const [imageUri, setImageUri] = useState(null); // State for the selected image
+    const [downloadedImageUri, setDownloadedImageUri] = useState(null); // State for the downloaded image
     const [uploading, setUploading] = useState(false);
 
     const saveNote = async () => {
@@ -28,11 +28,9 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
-    // Function to handle image upload
+    // Function to handle image upload locally (for preview)
     const handleImageUpload = async () => {
-        // Request permission to access media library
         let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
         if (permissionResult.granted === false) {
             alert("Permission to access camera roll is required!");
             return;
@@ -80,6 +78,22 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
+    // Function to fetch the image from Firebase Storage
+    const fetchImageFromFirebase = async () => {
+        try {
+            // Reference to the location in Firebase Storage where the image is stored
+            const storageRef = ref(storage, `images/Ks1YUCcXtAAAAAElFTkSuQmCC`); // Update this to match the filename or path of the image you want to fetch
+
+            // Get the download URL for the image
+            const url = await getDownloadURL(storageRef);
+            setDownloadedImageUri(url); // Set the downloaded image URI
+
+            alert("Image fetched successfully!");
+        } catch (error) {
+            console.error("Error fetching image: ", error);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <TextInput style={styles.input} value={text} onChangeText={setText} multiline />
@@ -95,8 +109,14 @@ export default function NoteDetail({ route, navigation }) {
                 disabled={uploading}
             />
 
+            {/* Button to fetch image from Firebase Storage */}
+            <Button title="Fetch Image from Firebase" onPress={fetchImageFromFirebase} />
+
             {/* Display the selected image */}
             {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
+
+            {/* Display the downloaded image */}
+            {downloadedImageUri && <Image source={{ uri: downloadedImageUri }} style={styles.image} />}
         </View>
     );
 }
