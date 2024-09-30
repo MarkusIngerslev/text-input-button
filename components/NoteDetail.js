@@ -82,7 +82,8 @@ export default function NoteDetail({ route, navigation }) {
     const fetchImageFromFirebase = async () => {
         try {
             // Reference to the location in Firebase Storage where the image is stored
-            const storageRef = ref(storage, `images/Ks1YUCcXtAAAAAElFTkSuQmCC`); // Update this to match the filename or path of the image you want to fetch
+            // Update this to match the filename or path of the image you want to fetch
+            const storageRef = ref(storage, `images/Ks1YUCcXtAAAAAElFTkSuQmCC`);
 
             // Get the download URL for the image
             const url = await getDownloadURL(storageRef);
