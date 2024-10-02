@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, StyleSheet, Image } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { database, storage } from "./firebase";
 import * as ImagePicker from "expo-image-picker";
 
@@ -14,19 +14,25 @@ export default function NoteDetail({ route, navigation }) {
 
     const saveNote = async () => {
         try {
+            setUploading(true);
             let imageUrl = imageUri;
 
-            // hvis der er valg et billede, upload det først
-            if (imageUri && imageUri.startsWith("https://")) {
+            // Hvis der er valgt et billede, upload det først
+            if (imageUri && !imageUri.startsWith("https://")) {
+                // Tjekker om billedet allerede er uploadet
                 const response = await fetch(imageUri);
                 const blob = await response.blob();
 
                 // Generér et unikt filnavn og reference til Firebase Storage
-                const filename = imageUri.substring(imageUri.lastIndexOf("/") + 1);
+                const filename = `${new Date().getTime()}.jpg`; // Unikt filnavn
                 const storageRef = ref(storage, `images/${filename}`);
 
-                // Upload billedet til Firebase Storage
+                // Upload billedet
                 await uploadBytes(storageRef, blob);
+
+                // Hent download-URL'en fra Firebase Storage
+                imageUrl = await getDownloadURL(storageRef);
+                setImageUri(imageUrl); // Opdater billedets URL lokalt
             }
 
             // Gem noten i Firestore med det valgte billede (hvis det findes)
@@ -39,11 +45,13 @@ export default function NoteDetail({ route, navigation }) {
             // Opdater lokalt
             const updatedNotes = notes.map((n) => (n.id === note.id ? { ...n, text, imageUri: imageUrl } : n));
             setNotes(updatedNotes);
-            navigation.goBack();
 
-            alert("Note saved successfully!");
+            alert("Note updated successfully!");
+            setUploading(false);
+            navigation.goBack();
         } catch (error) {
             console.error("Failed to update note in Firestore.", error);
+            setUploading(false);
         }
     };
 
@@ -66,67 +74,54 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
-    // Function to upload the image to Firebase Storage and get the URL
-    const uploadImageToFirebase = async () => {
-        if (!imageUri) {
-            alert("Please select an image first");
-            return;
-        }
-
+    // Funktion til at browse billeder fra Firebase Storage
+    const browseImagesFromFirebase = async () => {
         try {
-            setUploading(true);
-            const response = await fetch(imageUri);
-            const blob = await response.blob();
-
-            // Create a reference to the Firebase Storage location
-            const filename = imageUri.substring(imageUri.lastIndexOf("/") + 1);
-            const storageRef = ref(storage, `images/${filename}`);
-
-            // Upload the image to Firebase Storage
-            await uploadBytes(storageRef, blob);
-
-            // Get the download URL for the image
-            const downloadUrl = await getDownloadURL(storageRef);
-            setImageUri(downloadUrl); // Set the image URL from Firebase
-
-            setUploading(false);
-            alert("Image uploaded successfully and connected to the note!");
+            const listRef = ref(storage, "images/");
+            const res = await listAll(listRef);
+            const imageUrls = await Promise.all(
+                res.items.map(async (itemRef) => {
+                    const url = await getDownloadURL(itemRef);
+                    return url; // Hent download-URL'en for hvert billede
+                })
+            );
+            // Her kan du gemme imageUrls i state og vise dem i UI'et
+            setDownloadedImageUri(imageUrls); // Gem billederne til visning
+            alert("Fetched images from Firebase!");
         } catch (error) {
-            console.error("Error uploading image: ", error);
-            setUploading(false);
-        }
-    };
-
-    // Function to fetch the image from Firebase Storage
-    const fetchImageFromFirebase = async () => {
-        try {
-            // Reference to the location in Firebase Storage where the image is stored
-            // Update this to match the filename or path of the image you want to fetch
-            const storageRef = ref(storage, `images/Ks1YUCcXtAAAAAElFTkSuQmCC`);
-
-            // Get the download URL for the image
-            const url = await getDownloadURL(storageRef);
-            setImageUri(url); // Set the downloaded image URI
-
-            alert("Image fetched successfully!");
-        } catch (error) {
-            console.error("Error fetching image: ", error);
+            console.error("Error fetching images: ", error);
         }
     };
 
     return (
         <View style={styles.container}>
             <TextInput style={styles.input} value={text} onChangeText={setText} multiline />
-            <Button title="Save Note" onPress={saveNote} />
+            <Button title={uploading ? "Saving..." : "Save Note"} onPress={saveNote} disabled={uploading} />
 
             {/* Button to upload an image locally */}
             <Button title="Select Image" onPress={handleImageUpload} />
 
             {/* Button to fetch image from Firebase Storage */}
-            <Button title="Fetch Image from Firebase" onPress={fetchImageFromFirebase} />
+            <Button title="Fetch Image from Firebase" onPress={browseImagesFromFirebase} />
 
             {/* Display the selected image */}
             {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
+
+            {/* Render fetched images */}
+            {downloadedImageUri && (
+                <FlatList
+                    data={downloadedImageUri}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                        <Pressable onPress={() => setImageUri(item)}>
+                            {" "}
+                            {/* Vælg billede */}
+                            <Image source={{ uri: item }} style={styles.imageThumbnail} />
+                        </Pressable>
+                    )}
+                    horizontal
+                />
+            )}
         </View>
     );
 }
