@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, StyleSheet, Image } from "react-native";
+import { View, TextInput, Button, StyleSheet, Image, FlatList, Pressable, Modal, Text } from "react-native";
 import { doc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 import { database, storage } from "./firebase";
@@ -11,6 +11,7 @@ export default function NoteDetail({ route, navigation }) {
     const [imageUri, setImageUri] = useState(note.imageUri || null); // Load image URI if it exists
     const [downloadedImageUri, setDownloadedImageUri] = useState(null); // State for the downloaded image
     const [uploading, setUploading] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const saveNote = async () => {
         try {
@@ -75,6 +76,7 @@ export default function NoteDetail({ route, navigation }) {
     };
 
     // Funktion til at browse billeder fra Firebase Storage
+    // Function to browse images from Firebase Storage
     const browseImagesFromFirebase = async () => {
         try {
             const listRef = ref(storage, "images/");
@@ -82,12 +84,11 @@ export default function NoteDetail({ route, navigation }) {
             const imageUrls = await Promise.all(
                 res.items.map(async (itemRef) => {
                     const url = await getDownloadURL(itemRef);
-                    return url; // Hent download-URL'en for hvert billede
+                    return url;
                 })
             );
-            // Her kan du gemme imageUrls i state og vise dem i UI'et
-            setDownloadedImageUri(imageUrls); // Gem billederne til visning
-            alert("Fetched images from Firebase!");
+            setDownloadedImageUri(imageUrls); // Save fetched images in state
+            setModalVisible(true); // Show modal with images
         } catch (error) {
             console.error("Error fetching images: ", error);
         }
@@ -96,32 +97,46 @@ export default function NoteDetail({ route, navigation }) {
     return (
         <View style={styles.container}>
             <TextInput style={styles.input} value={text} onChangeText={setText} multiline />
-            <Button title={uploading ? "Saving..." : "Save Note"} onPress={saveNote} disabled={uploading} />
+            <Button title={uploading ? "Saving..." : "Save changes"} onPress={saveNote} disabled={uploading} />
 
             {/* Button to upload an image locally */}
-            <Button title="Select Image" onPress={handleImageUpload} />
+            <Button title="Select Image from device" onPress={handleImageUpload} />
 
             {/* Button to fetch image from Firebase Storage */}
-            <Button title="Fetch Image from Firebase" onPress={browseImagesFromFirebase} />
+            <Button title="Browse Images from firebase" onPress={browseImagesFromFirebase} />
 
             {/* Display the selected image */}
             {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
-            {/* Render fetched images */}
-            {downloadedImageUri && (
-                <FlatList
-                    data={downloadedImageUri}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={({ item }) => (
-                        <Pressable onPress={() => setImageUri(item)}>
-                            {" "}
-                            {/* Vælg billede */}
-                            <Image source={{ uri: item }} style={styles.imageThumbnail} />
-                        </Pressable>
-                    )}
-                    horizontal
-                />
-            )}
+            {/* Modal to show images from Firebase Storage */}
+            <Modal
+                animationType="fade" // Quicker fade animation
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)} // Close modal when the back button is pressed
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalText}>Select an Image</Text>
+                        <FlatList
+                            data={downloadedImageUri}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({ item }) => (
+                                <Pressable
+                                    onPress={() => {
+                                        setImageUri(item); // Set the selected image
+                                        setModalVisible(false); // Close the modal
+                                    }}
+                                >
+                                    <Image source={{ uri: item }} style={styles.imageThumbnail} />
+                                </Pressable>
+                            )}
+                            numColumns={3} // Display images in grid
+                        />
+                        <Button title="Close" onPress={() => setModalVisible(false)} />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -142,5 +157,39 @@ const styles = StyleSheet.create({
         width: 200,
         height: 200,
         marginTop: 20,
+    },
+    imageThumbnail: {
+        width: 100,
+        height: 100,
+        margin: 5,
+        borderRadius: 10, // Rounded corners for images
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.7)", // Darker overlay
+    },
+    modalView: {
+        width: "90%",
+        backgroundColor: "white",
+        borderRadius: 10,
+        padding: 20,
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5, // Adds a shadow effect for Android
+    },
+    modalText: {
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 20,
+        color: "black",
     },
 });
