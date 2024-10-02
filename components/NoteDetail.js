@@ -78,6 +78,23 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
+    // Function to fetch the image from Firebase Storage
+    const fetchImageFromFirebase = async () => {
+        try {
+            // Reference to the location in Firebase Storage where the image is stored
+            // Update this to match the filename or path of the image you want to fetch
+            const storageRef = ref(storage, `images/Ks1YUCcXtAAAAAElFTkSuQmCC`);
+
+            // Get the download URL for the image
+            const url = await getDownloadURL(storageRef);
+            setDownloadedImageUri(url); // Set the downloaded image URI
+
+            alert("Image fetched successfully!");
+        } catch (error) {
+            console.error("Error fetching image: ", error);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <TextInput style={styles.input} value={text} onChangeText={setText} multiline />
