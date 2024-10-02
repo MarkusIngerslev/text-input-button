@@ -14,16 +14,34 @@ export default function NoteDetail({ route, navigation }) {
 
     const saveNote = async () => {
         try {
+            let imageUrl = imageUri;
+
+            // hvis der er valg et billede, upload det først
+            if (imageUri && imageUri.startsWith("https://")) {
+                const response = await fetch(imageUri);
+                const blob = await response.blob();
+
+                // Generér et unikt filnavn og reference til Firebase Storage
+                const filename = imageUri.substring(imageUri.lastIndexOf("/") + 1);
+                const storageRef = ref(storage, `images/${filename}`);
+
+                // Upload billedet til Firebase Storage
+                await uploadBytes(storageRef, blob);
+            }
+
+            // Gem noten i Firestore med det valgte billede (hvis det findes)
             const noteRef = doc(database, "notes", note.id);
             await updateDoc(noteRef, {
                 text: text,
-                imageUri: imageUri, // Save the image URI with the note
+                imageUri: imageUrl, // Opdater note med billedets URL
             });
 
             // Opdater lokalt
-            const updatedNotes = notes.map((n) => (n.id === note.id ? { ...n, text, imageUri } : n));
+            const updatedNotes = notes.map((n) => (n.id === note.id ? { ...n, text, imageUri: imageUrl } : n));
             setNotes(updatedNotes);
             navigation.goBack();
+
+            alert("Note saved successfully!");
         } catch (error) {
             console.error("Failed to update note in Firestore.", error);
         }
@@ -103,13 +121,6 @@ export default function NoteDetail({ route, navigation }) {
 
             {/* Button to upload an image locally */}
             <Button title="Select Image" onPress={handleImageUpload} />
-
-            {/* Button to upload image to Firebase Storage */}
-            <Button
-                title={uploading ? "Uploading..." : "Upload to Firebase"}
-                onPress={uploadImageToFirebase}
-                disabled={uploading}
-            />
 
             {/* Button to fetch image from Firebase Storage */}
             <Button title="Fetch Image from Firebase" onPress={fetchImageFromFirebase} />
