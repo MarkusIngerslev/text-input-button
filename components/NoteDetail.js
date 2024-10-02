@@ -9,6 +9,7 @@ export default function NoteDetail({ route, navigation }) {
     const { note, notes, setNotes } = route.params;
     const [text, setText] = useState(note.text);
     const [imageUri, setImageUri] = useState(note.imageUri || null); // Load image URI if it exists
+    const [downloadedImageUri, setDownloadedImageUri] = useState(null); // State for the downloaded image
     const [uploading, setUploading] = useState(false);
 
     const saveNote = async () => {
@@ -87,7 +88,7 @@ export default function NoteDetail({ route, navigation }) {
 
             // Get the download URL for the image
             const url = await getDownloadURL(storageRef);
-            setDownloadedImageUri(url); // Set the downloaded image URI
+            setImageUri(url); // Set the downloaded image URI
 
             alert("Image fetched successfully!");
         } catch (error) {
@@ -110,7 +111,10 @@ export default function NoteDetail({ route, navigation }) {
                 disabled={uploading}
             />
 
-            {/* Display the selected or uploaded image */}
+            {/* Button to fetch image from Firebase Storage */}
+            <Button title="Fetch Image from Firebase" onPress={fetchImageFromFirebase} />
+
+            {/* Display the selected image */}
             {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
         </View>
     );
