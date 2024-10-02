@@ -83,6 +83,28 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
+    // Function to open the camera and take a picture
+    const handleOpenCamera = async () => {
+        // Request permission to access the camera
+        let permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        if (permissionResult.granted === false) {
+            alert("Permission to access camera is required!");
+            return;
+        }
+
+        // Launch camera and take a picture
+        let pickerResult = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        // If the user didn't cancel the camera, set the imageUri
+        if (!pickerResult.canceled) {
+            setImageUri(pickerResult.assets[0].uri);
+        }
+    };
+
     // ========================================
     // Browse images from Firebase Storage
     // ========================================
@@ -116,6 +138,9 @@ export default function NoteDetail({ route, navigation }) {
 
             {/* Button to upload an image locally */}
             <Button title="Select Image from device" onPress={handleImageUpload} />
+
+            {/* Button to open the camera */}
+            <Button title="Take a Picture" onPress={handleOpenCamera} />
 
             {/* Button to fetch image from Firebase Storage */}
             <Button title="Browse Images from firebase" onPress={browseImagesFromFirebase} />
