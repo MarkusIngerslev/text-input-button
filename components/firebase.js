@@ -5,12 +5,12 @@ import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyD6pacpBcmgXsat_SyJA1WkgUn2AkofV_E",
-    authDomain: "notebook-f282b.firebaseapp.com",
-    projectId: "notebook-f282b",
-    storageBucket: "notebook-f282b.appspot.com",
-    messagingSenderId: "174380221158",
-    appId: "1:174380221158:web:d45caf8e08b6785434b127",
+    apiKey: "AIzaSyB83HEgbQbfQQS1HMWspUPVSYQq3Ov7o8M",
+    authDomain: "notebookv2-b504e.firebaseapp.com",
+    projectId: "notebookv2-b504e",
+    storageBucket: "notebookv2-b504e.appspot.com",
+    messagingSenderId: "205280362284",
+    appId: "1:205280362284:web:fe596dca73a80862903689",
 };
 
 // Initialize Firebase
