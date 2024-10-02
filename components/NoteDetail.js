@@ -13,6 +13,10 @@ export default function NoteDetail({ route, navigation }) {
     const [uploading, setUploading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
 
+    // ========================================
+    // Save changes to note
+    // and opload text and image to Firestore
+    // ========================================
     const saveNote = async () => {
         try {
             setUploading(true);
@@ -56,6 +60,10 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
+    // ========================================
+    // Handle image upload locally (for preview)
+    // ========================================
+
     // Function to handle image upload locally (for preview)
     const handleImageUpload = async () => {
         let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -75,7 +83,10 @@ export default function NoteDetail({ route, navigation }) {
         }
     };
 
-    // Funktion til at browse billeder fra Firebase Storage
+    // ========================================
+    // Browse images from Firebase Storage
+    // ========================================
+
     // Function to browse images from Firebase Storage
     const browseImagesFromFirebase = async () => {
         try {
@@ -93,6 +104,10 @@ export default function NoteDetail({ route, navigation }) {
             console.error("Error fetching images: ", error);
         }
     };
+
+    // ========================================
+    // Render the component
+    // ========================================
 
     return (
         <View style={styles.container}>
@@ -140,6 +155,10 @@ export default function NoteDetail({ route, navigation }) {
         </View>
     );
 }
+
+// ========================================
+// Styles
+// ========================================
 
 const styles = StyleSheet.create({
     container: {
